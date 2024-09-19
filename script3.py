@@ -1,74 +1,56 @@
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# 1. Cargar los datos
+# 1. Cargar los datos desde el path específico
 data = pd.read_excel("C:\\Users\\Daniel Bolaños\\Downloads\\Cuestionario de aerolínea (respuestas).xlsx")
 
-# 2. Asignar nombres más cortos a las columnas para facilidad de manejo
-data.rename(columns={
-    'La seguridad es una prioridad fundamental al elegir una aerolínea.': 'Seguridad',
-    'Prefiero una aerolínea que ofrezca información detallada sobre sus procedimientos de seguridad y pagaría más por ello': 'Proc_Seguridad',
-    'El precio de los boletos es el factor más importante al elegir una aerolínea.': 'Precio',
-    'Estoy dispuesto/a a pagar un poco más por una mejor experiencia de vuelo.': 'Pago_Mejora_Experiencia',
-    'La puntualidad es crucial para mí cuando viajo en avión.': 'Puntualidad',
-    'Prefiero una aerolínea con una buena reputación en cuanto a la gestión de retrasos.': 'Reputacion_Retrasos',
-    'Es importante para mí que una aerolínea ofrezca vuelos frecuentes en mis rutas de viaje habituales.': 'Vuelos_Frecuentes',
-    'Valoro la disponibilidad de múltiples opciones de horarios para mis vuelos.': 'Opciones_Horarios',
-    'La comodidad del asiento y el espacio en el avión son muy importantes para mí.': 'Comodidad_Asiento',
-    'Estoy interesado/a en servicios adicionales que mejoren la comodidad durante el vuelo, como entretenimiento a bordo o espacio adicional para las piernas.': 'Servicios_Adicionales',
-    'La calidad y variedad de la comida ofrecida en el avión influyen en mi elección de aerolínea.': 'Calidad_Comida',
-    'Prefiero aerolíneas que ofrecen opciones de comida especiales o dietéticas.': 'Comida_Especial',
-    'Una plataforma de reserva fácil de usar es esencial para mí al elegir una aerolínea.': 'Reserva_Facil',
-    'Valoro la posibilidad de hacer cambios en mi reserva sin complicaciones.': 'Cambios_Reserva'
-}, inplace=True)
+# Selección de las columnas necesarias para los gráficos
+df_cleaned = data[['Edad:', 'Ingresos Anuales:', 'Frecuencia de Viaje:']].copy()
 
-# 3. Seleccionar las columnas relevantes para clustering (con nombres más cortos)
-columnas_clustering = [
-    'Seguridad', 'Proc_Seguridad', 'Precio', 'Pago_Mejora_Experiencia',
-    'Puntualidad', 'Reputacion_Retrasos', 'Vuelos_Frecuentes', 'Opciones_Horarios',
-    'Comodidad_Asiento', 'Servicios_Adicionales', 'Calidad_Comida',
-    'Comida_Especial', 'Reserva_Facil', 'Cambios_Reserva'
-]
+# Renombrar columnas para un uso más sencillo
+df_cleaned.columns = ['Edad', 'Ingresos', 'Frecuencia_Viaje']
 
-# 4. Filtrar los datos
-df_clustering = data[columnas_clustering]
+# Eliminar filas con datos faltantes
+df_cleaned.dropna(subset=['Edad', 'Ingresos', 'Frecuencia_Viaje'], inplace=True)
 
-# 5. Estandarizar los datos
-scaler = StandardScaler()
-df_scaled = scaler.fit_transform(df_clustering)
-
-# 6. Aplicar PCA para reducir la dimensionalidad
-pca = PCA(n_components=2)  # Mantener solo las dos primeras componentes principales para visualización
-df_pca = pca.fit_transform(df_scaled)
-
-# 7. Ver la varianza explicada por cada componente principal
-print(f'Varianza explicada por cada componente: {pca.explained_variance_ratio_}')
-print(f'Varianza explicada total: {pca.explained_variance_ratio_.sum()}')
-
-# 8. Aplicar K-Means en los datos reducidos por PCA
-kmeans = KMeans(n_clusters=3, random_state=42)
-data['Cluster'] = kmeans.fit_predict(df_pca)
-
-# 9. Visualización de clusters en las primeras dos componentes principales
-plt.figure(figsize=(10, 6))
-scatter = sns.scatterplot(x=df_pca[:, 0], y=df_pca[:, 1], hue=data['Cluster'], palette='Set1', s=100)
-plt.title('Clusters basados en preferencias de aerolínea (PCA)')
-plt.xlabel('Componente Principal 1')
-plt.ylabel('Componente Principal 2')
-
-# Mejorar la leyenda
-plt.legend(title='Segmentos de Clientes', loc='upper right', title_fontsize='13', fontsize='10')
+# 1. Gráfico de barras de la distribución de Edad
+plt.figure(figsize=(8, 6))
+df_cleaned['Edad'].value_counts().sort_index().plot(kind='bar', color='skyblue')
+plt.title('Distribución de Edad')
+plt.xlabel('Edad')
+plt.ylabel('Cantidad de respuestas')
+plt.xticks(rotation=45)
+plt.tight_layout()
 plt.show()
 
-# Gráfico de barras para comparar la media de cada variable por cluster
-cluster_means = data.groupby('Cluster')[columnas_clustering].mean()
-cluster_means.T.plot(kind='bar', figsize=(12, 8))
-plt.title('Media de respuestas por Cluster')
-plt.xlabel('Preguntas')
-plt.ylabel('Valor Promedio')
-plt.legend(title='Cluster')
+# 2. Gráfico de barras de la distribución de Ingresos
+plt.figure(figsize=(8, 6))
+df_cleaned['Ingresos'].value_counts().sort_index().plot(kind='bar', color='lightgreen')
+plt.title('Distribución de Ingresos Anuales')
+plt.xlabel('Ingresos')
+plt.ylabel('Cantidad de respuestas')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# 3. Frecuencia de Viaje por Edad
+plt.figure(figsize=(10, 6))
+df_pivot_frecuencia_edad = df_cleaned.groupby(['Edad', 'Frecuencia_Viaje']).size().unstack().fillna(0)
+df_pivot_frecuencia_edad.plot(kind='bar', stacked=True, figsize=(10, 6), colormap='tab20')
+plt.title('Frecuencia de Viaje por Edad')
+plt.xlabel('Edad')
+plt.ylabel('Cantidad de respuestas')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# 4. Distribución de Edad por Ingresos Anuales
+plt.figure(figsize=(10, 6))
+df_pivot_edad_ingresos = df_cleaned.groupby(['Edad', 'Ingresos']).size().unstack().fillna(0)
+df_pivot_edad_ingresos.plot(kind='bar', stacked=True, figsize=(10, 6), colormap='viridis')
+plt.title('Distribución de Edad por Ingresos Anuales')
+plt.xlabel('Edad')
+plt.ylabel('Cantidad de respuestas')
+plt.xticks(rotation=45)
+plt.tight_layout()
 plt.show()
